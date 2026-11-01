@@ -37,4 +37,4 @@ The supplied source files contained an execution report with screenshots, but no
 
 ## Evidence
 
-All 31 terminal screenshots are retained under `evidence/screenshots/`, with a figure index in `evidence/screenshots/README.csv`. The original execution report is preserved in `evidence/source/`.
+The [screenshot gallery](evidence/screenshots/README.md) includes all 31 terminal screenshots, each wit
