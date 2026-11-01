@@ -1,30 +1,32 @@
-file,source_pdf_page,figure_number
-page-02-shot-01.png,2,1
-page-02-shot-02.png,2,2
-page-03-shot-01.png,3,3
-page-03-shot-02.png,3,4
-page-04-shot-01.png,4,6
-page-04-shot-02.png,4,7
-page-04-shot-03.png,4,8
-page-05-shot-01.png,5,9
-page-05-shot-02.png,5,10
-page-05-shot-03.png,5,11
-page-06-shot-01.png,6,12
-page-06-shot-02.png,6,13
-page-06-shot-03.png,6,14
-page-07-shot-01.png,7,16
-page-08-shot-01.png,8,17
-page-08-shot-02.png,8,18
-page-09-shot-01.png,9,19
-page-09-shot-02.png,9,20
-page-10-shot-01.png,10,21
-page-10-shot-02.png,10,22
-page-11-shot-01.png,11,23
-page-11-shot-02.png,11,24
-page-12-shot-01.png,12,25
-page-13-shot-01.png,13,26
-page-14-shot-01.png,14,27
-page-15-shot-01.png,15,28
-page-16-shot-01.png,16,29
-page-17-shot-01.png,17,30
-page-17-shot-02.png,17,31
+screenshot_number,file,source_capture_page,heading,what_it_shows
+01,page-02-shot-01.png,2,User records,Shows the inserted analysts and account fields returned from the user table.
+02,page-02-shot-02.png,2,Organizational assets,"Lists asset IDs, organization links, hostnames, IP addresses, and criticality."
+03,page-03-shot-01.png,3,Threat actor records,"Shows the threat actor rows and attributes such as aliases, origin country, and sophistication."
+04,page-03-shot-02.png,3,Combined psql session and schema inspection,"A broader terminal capture with base-data commands and the intel_source table definition, including its columns and constraints."
+05,page-04-shot-01.png,4,Intelligence source records,"Lists intelligence feeds, source types, and reliability scores."
+06,page-04-shot-02.png,4,Indicators of compromise (IOCs),"Shows IOC types and values together with source, confidence, and observed dates."
+07,page-04-shot-03.png,4,Attack campaign records,"Lists campaigns, their associated actors, objectives, dates, and statuses."
+08,page-05-shot-01.png,5,MITRE ATT&CK techniques (TTPs),"Shows technique IDs, tactics, and technique names."
+09,page-05-shot-02.png,5,Malware sample records,"Lists malware hashes, family names, file types, and first-seen dates."
+10,page-05-shot-03.png,5,Malware and vulnerability join,Connects malware samples to CVEs and returns vulnerability scores and descriptions.
+11,page-06-shot-01.png,6,Campaign and indicator join,"Lists indicators associated with each campaign, including confidence and correlation values."
+12,page-06-shot-02.png,6,Campaign and TTP join,Shows the techniques linked to each campaign and the corresponding tactics.
+13,page-06-shot-03.png,6,Indicator and malware join,Connects IOC records to malware families and file types.
+14,page-07-shot-01.png,7,"Alert, asset, indicator, and analyst join","Combines alert severity and status with affected host, matched IOC, and assigned analyst."
+15,page-07-shot-02.png,7,"Report, author, and campaign join","Lists reports with their author, campaign, classification, and publication date."
+16,page-08-shot-01.png,8,Alert status update,Updates an alert to Investigating and queries the row to confirm the new status.
+17,page-08-shot-02.png,8,Alert count by severity,Uses GROUP BY and COUNT to summarize alerts in each severity category.
+18,page-09-shot-01.png,9,Campaign count with HAVING,Groups indicators by campaign and filters the groups with a HAVING condition.
+19,page-09-shot-02.png,9,Average indicator confidence by IOC type,Uses AVG with GROUP BY to compare confidence across IOC types.
+20,page-10-shot-01.png,10,Indicators above average confidence,Uses a nested subquery to return indicators whose confidence exceeds the overall average.
+21,page-10-shot-02.png,10,Campaigns above their actor’s average correlation,Uses a correlated subquery to compare each campaign with the average score for its threat actor.
+22,page-11-shot-01.png,11,CASE-based alert priority,Maps alert severities to human-readable priority labels with a CASE expression.
+23,page-11-shot-02.png,11,Campaign threat summary view,"Queries the view that summarizes campaign, actor, indicator, and correlation information."
+24,page-12-shot-01.png,12,EXISTS: campaigns with indicators,Returns campaigns for which at least one linked indicator exists.
+25,page-13-shot-01.png,13,NOT EXISTS: assets without resolved alerts,Finds assets with no associated alert marked Resolved.
+26,page-14-shot-01.png,14,Savepoint and commit,"Demonstrates a transaction with a savepoint, a rollback to that savepoint, and a final commit."
+27,page-15-shot-01.png,15,Full transaction rollback,Demonstrates rolling back a transaction so the change is discarded.
+28,page-16-shot-01.png,16,Database index listing,Shows the indexes present in the PostgreSQL database and the relations they support.
+29,page-16-shot-02.png,16,High and critical security alerts,Filters alerts to high-severity and critical-severity records.
+30,page-17-shot-01.png,17,Strong campaign correlations,"Returns campaigns above the selected correlation threshold, ordered by score."
+31,page-17-shot-02.png,17,Final threat intelligence correlation query,"Combines campaign, actor, indicator, malware, alert, and asset data for investigation."
