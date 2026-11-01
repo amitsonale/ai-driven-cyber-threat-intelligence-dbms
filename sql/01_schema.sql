@@ -70,8 +70,8 @@ CREATE TABLE campaign (
     end_date           DATE,
     status             VARCHAR(30) NOT NULL DEFAULT 'Active'
                        CHECK (status IN ('Active', 'Monitoring', 'Dormant', 'Closed')),
-    correlation_score  NUMERIC(5,2) NOT NULL DEFAULT 0
-                       CHECK (correlation_score BETWEEN 0 AND 100),
+    correlation_score  NUMERIC(5,3) NOT NULL DEFAULT 0.000
+                       CHECK (correlation_score BETWEEN 0.000 AND 1.000),
     CHECK (start_date IS NULL OR end_date IS NULL OR end_date >= start_date)
 );
 
@@ -127,6 +127,8 @@ CREATE TABLE campaign_indicator (
     campaign_id     INTEGER NOT NULL REFERENCES campaign(campaign_id) ON DELETE CASCADE,
     indicator_id    INTEGER NOT NULL REFERENCES indicator(indicator_id) ON DELETE CASCADE,
     linked_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    correlation_score NUMERIC(5,3) NOT NULL DEFAULT 0.000
+                      CHECK (correlation_score BETWEEN 0.000 AND 1.000),
     PRIMARY KEY (campaign_id, indicator_id)
 );
 

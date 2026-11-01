@@ -1,6 +1,6 @@
 # Running the PostgreSQL project
 
-The scripts are ordered for a new, empty PostgreSQL database. The schema and sample data form a complete reconstructed implementation based on the supplied execution report, report text, and screenshots. They are not the unavailable original source files, and their illustrative seed values may not match every screenshot row exactly.
+The scripts are ordered for a new, empty PostgreSQL database. The schema stores correlation scores as decimals from 0 to 1, matching values such as 0.950 in the supplied screenshots. The sample data and schema form a reconstructed implementation based on the supplied execution report, report text, and screenshots. They are not the unavailable original source files, and their illustrative seed values may not match every screenshot row exactly.
 
 ```sh
 createdb threat_intel_db

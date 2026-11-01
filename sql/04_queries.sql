@@ -18,7 +18,8 @@ JOIN malware_vuln AS mv ON mv.malware_id = m.malware_id
 JOIN vulnerability AS v ON v.vulnerability_id = mv.vulnerability_id
 ORDER BY m.family_name, v.cve_id;
 
-SELECT c.name AS campaign, i.ioc_type, i.value, i.confidence_score
+SELECT c.name AS campaign, i.ioc_type, i.value, i.confidence_score,
+       ci.correlation_score
 FROM campaign AS c
 JOIN campaign_indicator AS ci ON ci.campaign_id = c.campaign_id
 JOIN indicator AS i ON i.indicator_id = ci.indicator_id
@@ -136,11 +137,12 @@ ORDER BY detected_at DESC;
 
 SELECT campaign_id, name, actor_id, correlation_score
 FROM campaign
-WHERE correlation_score >= 75
+WHERE correlation_score >= 0.750
 ORDER BY correlation_score DESC;
 
 SELECT c.name AS campaign, ta.name AS threat_actor,
        i.ioc_type, i.value AS indicator, i.confidence_score,
+       ci.correlation_score AS indicator_correlation,
        m.family_name AS malware, a.severity, a.status, ast.hostname
 FROM campaign AS c
 JOIN threat_actor AS ta ON ta.actor_id = c.actor_id
@@ -150,7 +152,7 @@ LEFT JOIN indicator_malware AS im ON im.indicator_id = i.indicator_id
 LEFT JOIN malware_sample AS m ON m.malware_id = im.malware_id
 LEFT JOIN alert AS a ON a.indicator_id = i.indicator_id
 LEFT JOIN asset AS ast ON ast.asset_id = a.asset_id
-WHERE c.correlation_score >= 70
+WHERE c.correlation_score >= 0.700
 ORDER BY c.correlation_score DESC, i.confidence_score DESC;
 
 -- 11. Safe DELETE pattern. Replace the key after reviewing dependencies.

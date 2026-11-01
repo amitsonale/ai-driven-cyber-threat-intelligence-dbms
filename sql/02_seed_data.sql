@@ -48,11 +48,11 @@ INSERT INTO indicator (indicator_id, source_id, ioc_type, value, confidence_scor
 ON CONFLICT (indicator_id) DO NOTHING;
 
 INSERT INTO campaign (campaign_id, actor_id, name, objective, start_date, end_date, status, correlation_score) VALUES
-(1, 1, 'Blue Lantern', 'Credential theft and access persistence', '2025-01-01', '2025-02-15', 'Active', 91.50),
-(2, 1, 'Winter Harbor', 'Targeted collection against finance systems', '2025-02-01', '2025-03-10', 'Monitoring', 79.00),
-(3, 2, 'Silent Orbit', 'Malware delivery and data collection', '2025-01-20', '2025-03-01', 'Active', 86.00),
-(4, 3, 'Copper Trail', 'Payment system intrusion attempts', '2025-03-01', NULL, 'Monitoring', 62.50),
-(5, 4, 'Amber Mist', 'Phishing and follow-on activity', '2025-03-12', NULL, 'Active', 74.00)
+(1, 1, 'Blue Lantern', 'Credential theft and access persistence', '2025-01-01', '2025-02-15', 'Active', 0.950),
+(2, 1, 'Winter Harbor', 'Targeted collection against finance systems', '2025-02-01', '2025-03-10', 'Monitoring', 0.910),
+(3, 2, 'Silent Orbit', 'Malware delivery and data collection', '2025-01-20', '2025-03-01', 'Active', 0.880),
+(4, 3, 'Copper Trail', 'Payment system intrusion attempts', '2025-03-01', NULL, 'Monitoring', 0.840),
+(5, 4, 'Amber Mist', 'Phishing and follow-on activity', '2025-03-12', NULL, 'Active', 0.790)
 ON CONFLICT (campaign_id) DO NOTHING;
 
 INSERT INTO ttp (ttp_id, technique_id, name, tactic, description) VALUES
@@ -94,8 +94,11 @@ INSERT INTO report (report_id, user_id, campaign_id, title, summary, created_at)
 (3, 1, 2, 'Winter Harbor Update', 'Updated confidence and campaign activity summary.', '2025-02-12 10:00+00')
 ON CONFLICT (report_id) DO NOTHING;
 
-INSERT INTO campaign_indicator (campaign_id, indicator_id) VALUES
-(1,1),(1,2),(1,6),(2,1),(2,5),(3,3),(3,4),(3,8),(4,5),(5,2),(5,7)
+INSERT INTO campaign_indicator (campaign_id, indicator_id, correlation_score) VALUES
+(1,1,0.950),(1,2,0.920),(1,6,0.910),
+(2,1,0.910),(2,5,0.790),
+(3,3,0.880),(3,4,0.840),(3,8,0.880),
+(4,5,0.790),(5,2,0.820),(5,7,0.700)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO campaign_ttp (campaign_id, ttp_id) VALUES

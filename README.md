@@ -33,8 +33,8 @@ A relational database project for connecting threat actors, campaigns, indicator
 
 The ordered scripts provide a full reconstructed PostgreSQL implementation: relational schema and constraints, sample inserts, junction-table relations, joins, updates, aggregates, subqueries, `CASE`, a campaign summary view, `EXISTS`/`NOT EXISTS`, indexes, transaction and savepoint examples, a SQL function, a stored procedure, and audit/update triggers. Setup steps and run order are in [`sql/00_setup.md`](sql/00_setup.md).
 
-The supplied source files contained an execution report with screenshots, but not the original complete `.sql` files. The implementation in `sql/` was therefore reconstructed from the project report and visible evidence; it is an integrated runnable version, not a byte-for-byte copy of the unavailable original. Some seed values are illustrative. The report records what was shown in the supplied evidence; routines and triggers are repository additions beyond that evidence.
+The supplied source files contained an execution report with screenshots, but not the original complete `.sql` files. The implementation in `sql/` was therefore reconstructed from the project report and visible evidence; it is an integrated runnable version, not a byte-for-byte copy of the unavailable original. Correlation scores use a decimal scale from 0 to 1, matching the values visible in the supplied screenshots. Some seed values are illustrative. The report records what was shown in the supplied evidence; routines and triggers are repository additions beyond that evidence.
 
 ## Evidence
 
-The [screenshot gallery](evidence/screenshots/README.md) includes all 31 terminal screenshots, each wit
+The [screenshot gallery](evidence/screenshots/README.md) includes all 31 terminal screenshots, each with a heading and an explanation of what it demonstrates. A machine-readable index is also available in `evidence/screenshots/README.csv`. The original execution report is preserved in `evidence/source/`.
