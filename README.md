@@ -18,6 +18,9 @@ A relational database project for connecting threat actors, campaigns, indicator
 ├── evidence/
 │   ├── screenshots/       # 31 terminal screenshots, retained from the supplied PDF
 │   └── source/            # Original SQL execution report PDF
+├── src/
+│   ├── server.js           # Local Node.js API and static web server
+│   └── public/             # Dashboard HTML, CSS, and browser JavaScript
 └── sql/
     ├── 00_setup.md
     ├── 01_schema.sql
@@ -38,3 +41,7 @@ The supplied source files contained an execution report with screenshots, but no
 ## Evidence
 
 The [screenshot gallery](evidence/screenshots/README.md) includes all 31 terminal screenshots, each with a heading and an explanation of what it demonstrates. A machine-readable index is also available in `evidence/screenshots/README.csv`. The original execution report is preserved in `evidence/source/`.
+
+## Web dashboard
+
+The repository now includes a local dashboard for overview, alerts, campaigns, indicators, and assets. Start it with Node.js 18 or later using `npm start`; no package installation is needed. If PostgreSQL is not connected, the app displays a sample preview and disables status edits. To connect live data, configure `DATABASE_URL` in a local `.env` file and follow [`src/README.md`](src/README.md).
