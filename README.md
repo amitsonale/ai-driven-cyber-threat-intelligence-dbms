@@ -1,8 +1,8 @@
 # AI-Driven Cyber Threat Intelligence & Attack Campaign Correlation System
 
-**DBMS mini project — PostgreSQL**
+**DBMS mini project — PostgreSQL + MongoDB**
 
-A relational database project for connecting threat actors, campaigns, indicators of compromise (IOCs), malware, vulnerabilities, organizational assets, alerts, analysts, and reports.
+A dual-database project: PostgreSQL stores normalized operational entities and relationships; MongoDB stores flexible threat-evidence documents with nested source context and tags.
 
 ## Authors
 
@@ -21,6 +21,10 @@ A relational database project for connecting threat actors, campaigns, indicator
 ├── src/
 │   ├── server.js           # Local Node.js API and static web server
 │   └── public/             # Dashboard HTML, CSS, and browser JavaScript
+├── mongodb/
+│   └── seed-documents.json # Example flexible evidence documents
+├── scripts/
+│   └── seed-mongodb.js     # Idempotently loads the MongoDB sample documents
 └── sql/
     ├── 00_setup.md
     ├── 01_schema.sql
@@ -38,10 +42,17 @@ The ordered scripts provide a full reconstructed PostgreSQL implementation: rela
 
 The supplied source files contained an execution report with screenshots, but not the original complete `.sql` files. The implementation in `sql/` was therefore reconstructed from the project report and visible evidence; it is an integrated runnable version, not a byte-for-byte copy of the unavailable original. Correlation scores use a decimal scale from 0 to 1, matching the values visible in the supplied screenshots. Some seed values are illustrative. The report records what was shown in the supplied evidence; routines and triggers are repository additions beyond that evidence.
 
+## Two databases
+
+- **PostgreSQL (SQL):** normalized organizations, users, threat actors, campaigns, indicators, assets, alerts, and audit records.
+- **MongoDB (NoSQL):** flexible documents in `threat_intel_evidence.threat_evidence`, including source-specific nested context and tags. Each document links to its PostgreSQL indicator ID.
+
+The dashboard reads structured views from PostgreSQL and displays evidence documents from MongoDB under **Intel evidence**. Example documents are provided in [`mongodb/seed-documents.json`](mongodb/seed-documents.json).
+
 ## Evidence
 
 The [screenshot gallery](evidence/screenshots/README.md) includes all 31 terminal screenshots, each with a heading and an explanation of what it demonstrates. A machine-readable index is also available in `evidence/screenshots/README.csv`. The original execution report is preserved in `evidence/source/`.
 
 ## Web dashboard
 
-The repository now includes a local dashboard for overview, alerts, campaigns, indicators, and assets. Start it with Node.js 18 or later using `npm start`; no package installation is needed. If PostgreSQL is not connected, the app displays a sample preview and disables status edits. To connect live data, configure `DATABASE_URL` in a local `.env` file and follow [`src/README.md`](src/README.md).
+The repository includes a local dashboard for overview, alerts, campaigns, indicators, assets, and MongoDB intel evidence. Install dependencies with `npm install`, configure both databases in `.env`, and follow [`src/README.md`](src/README.md) to initialize and start them.

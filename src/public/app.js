@@ -1,9 +1,9 @@
 'use strict';
 
-const state = { view: 'overview', overview: null, alerts: [], campaigns: [], indicators: [], assets: [], health: null, toastTimer: null, demoMode: false };
+const state = { view: 'overview', overview: null, alerts: [], campaigns: [], indicators: [], assets: [], evidence: [], health: null, toastTimer: null, demoMode: false };
 const root = document.getElementById('view-root');
 const banner = document.getElementById('connection-banner');
-const viewTitles = { overview: 'Overview', alerts: 'Alerts', campaigns: 'Campaigns', indicators: 'Indicators', assets: 'Assets' };
+const viewTitles = { overview: 'Overview', alerts: 'Alerts', campaigns: 'Campaigns', indicators: 'Indicators', assets: 'Assets', evidence: 'Intel evidence' };
 
 const DEMO = {
   overview: {
@@ -87,13 +87,19 @@ function showToast(text, isError=false) {
 }
 function setConnection(health) {
   state.health = health;
-  const connected = Boolean(health && health.connected);
+  const connected = Boolean(health && (health.postgresql ?? health.connected));
+  const mongoConnected = Boolean(health && health.mongodb);
   const dot = document.getElementById('sidebar-dot');
-  dot.className = `connection-dot ${connected ? 'online' : 'offline'}`;
-  document.getElementById('sidebar-connection').textContent = connected ? 'Database online' : 'Database offline';
-  if (connected) {
+  dot.className = `connection-dot ${connected && mongoConnected ? 'online' : connected ? 'partial' : 'offline'}`;
+  document.getElementById('sidebar-connection').textContent = connected && mongoConnected ? '2 databases online' : connected ? 'PostgreSQL online' : 'Databases offline';
+  document.getElementById('sidebar-databases').textContent = `SQL ${connected ? 'online' : 'offline'} · NoSQL ${mongoConnected ? 'online' : 'offline'}`;
+  if (connected && mongoConnected) {
     state.demoMode = false;
     banner.classList.add('hidden');
+  } else if (connected) {
+    state.demoMode = false;
+    banner.innerHTML = `<strong>PostgreSQL is connected; MongoDB evidence storage is offline.</strong> ${esc(health?.message || 'Start MongoDB and check MONGODB_URI.')}`;
+    banner.classList.remove('hidden');
   } else {
     banner.innerHTML = `<strong>Sample preview — database offline.</strong> ${esc(health?.message || 'Start PostgreSQL and configure DATABASE_URL.')} The preview uses example records and does not save changes. For live data, run the SQL setup files and see <a href="https://github.com/amitsonale/ai-driven-cyber-threat-intelligence-dbms/blob/main/README.md" target="_blank" rel="noreferrer">the setup instructions</a>.`;
     banner.classList.remove('hidden');
@@ -125,7 +131,7 @@ function renderOverview(data) {
     return `<div class="severity-row ${level.toLowerCase()}"><span>${level}</span><div class="severity-track"><div class="severity-fill" style="width:${Math.max(count ? 5 : 0, count/total*100)}%"></div></div><span class="severity-count">${n(count)}</span></div>`;
   }).join('');
   const campaignRows = (data?.campaigns || []).map(c => `<div class="campaign-row"><div><div class="campaign-name">${esc(c.campaign_name)}</div><div class="campaign-actor">${esc(c.threat_actor || 'Unattributed')} · ${n(c.indicator_count)} indicators</div></div><div class="score-track"><div class="score-fill" style="width:${pct(Number(c.correlation_score)*100)}%"></div></div><div class="score-value">${(Number(c.correlation_score||0)).toFixed(3)}</div></div>`).join('') || '<div class="empty-filter">No campaign records available.</div>';
-  root.innerHTML = `${pageHeading('Overview','A live view of alerts, campaigns, indicators, and protected assets.', state.demoMode ? 'SAMPLE DATA' : 'DATA SOURCE · POSTGRESQL')}
+  root.innerHTML = `${pageHeading('Overview','A live view of alerts, campaigns, indicators, and protected assets.', state.demoMode ? 'SAMPLE DATA' : 'DATA SOURCES · POSTGRESQL + MONGODB')}
     <div class="kpi-grid">
       ${kpi('Open investigations', totals.open_alerts, 'Open or under investigation', '◉','danger')}
       ${kpi('Critical alerts', totals.critical_alerts, 'Critical and not yet resolved', '!', 'amber')}
@@ -186,6 +192,18 @@ function renderAssets(rows) {
   root.innerHTML=`${pageHeading('Assets','Review protected systems and the alerts associated with each one.')}
     <section class="panel table-panel"><div class="section-toolbar"><span class="result-count">${n(rows.length)} assets</span><span class="status-help">Ordered by business criticality</span></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Asset</th><th>Host</th><th>Organization</th><th>Type</th><th>Criticality</th><th>Alerts</th></tr></thead><tbody>${body||'<tr><td colspan="6" class="empty-filter">No assets found.</td></tr>'}</tbody></table></div></section>`;
 }
+function renderEvidence(rows) {
+  const body=rows.map(doc=>`<tr>
+    <td class="mono">${esc(doc._id)}</td><td>${badge(doc.indicatorType)}</td>
+    <td class="indicator-value mono" title="${esc(doc.indicator)}">${esc(doc.indicator)}</td>
+    <td>${esc(doc.source||'Unknown')}</td><td>${n(doc.confidence)}%</td>
+    <td class="muted">${date(doc.observedAt)}</td>
+    <td>${(doc.tags||[]).map(tag=>badge(tag)).join(' ')}</td>
+    <td><code class="evidence-context">${esc(JSON.stringify(doc.context||{}))}</code></td>
+  </tr>`).join('');
+  root.innerHTML=`${pageHeading('Intel evidence','Flexible source records and nested context stored as MongoDB documents.','MONGODB DOCUMENT STORE')}
+    <section class="panel table-panel"><div class="section-toolbar"><span class="result-count">${n(rows.length)} evidence documents</span><span class="status-help">MongoDB · threat_evidence collection</span></div><div class="table-wrap"><table class="data-table evidence-table"><thead><tr><th>Document ID</th><th>Type</th><th>Indicator</th><th>Source</th><th>Confidence</th><th>Observed</th><th>Tags</th><th>Flexible context</th></tr></thead><tbody>${body||'<tr><td colspan="8" class="empty-filter">No evidence documents found. Run npm run seed:mongodb.</td></tr>'}</tbody></table></div><div class="section-toolbar status-help">Each document links to its normalized PostgreSQL indicator using the stored indicator ID.</div></section>`;
+}
 async function loadView(view=state.view) {
   state.view=view;
   document.querySelectorAll('.nav-item').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
@@ -197,6 +215,7 @@ async function loadView(view=state.view) {
     if(view==='campaigns'){state.campaigns=await api('/api/campaigns');renderCampaigns(state.campaigns);}
     if(view==='indicators'){state.indicators=await api('/api/indicators');renderIndicators(state.indicators);}
     if(view==='assets'){state.assets=await api('/api/assets');renderAssets(state.assets);}
+    if(view==='evidence'){state.evidence=await api('/api/evidence');renderEvidence(state.evidence);}
     document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>loadView(b.dataset.goto)));
   } catch(error) {
     const health=await api('/api/health').catch(()=>({connected:false,message:error.message}));
@@ -208,10 +227,11 @@ async function loadView(view=state.view) {
       if(view==='campaigns') renderCampaigns(DEMO.campaigns);
       if(view==='indicators') renderIndicators(DEMO.indicators);
       if(view==='assets') renderAssets(DEMO.assets);
+      if(view==='evidence') root.innerHTML=`${pageHeading('Intel evidence','MongoDB evidence store is unavailable.')}`;
       document.getElementById('nav-alert-count').textContent=n(DEMO.overview.totals.open_alerts);
       return;
     }
-    root.innerHTML=`<div class="empty-state">${esc(error.message)}. Check the local PostgreSQL setup, then refresh.</div>`;
+    root.innerHTML=`<div class="empty-state">${esc(error.message)}. Check the local database setup, then refresh.</div>`;
   }
 }
 async function refresh() {

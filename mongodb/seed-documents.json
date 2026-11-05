@@ -1,0 +1,90 @@
+[
+  {
+    "_id": "evidence-001",
+    "postgresIndicatorId": 1,
+    "indicatorType": "IP",
+    "indicator": "198.51.100.24",
+    "source": "Open Threat Feed",
+    "confidence": 92,
+    "observedAt": "2025-01-09T11:00:00.000Z",
+    "tags": ["credential-theft", "external-feed"],
+    "context": {"feedRecord": "OTF-2025-0091", "region": "example-region", "reports": 4}
+  },
+  {
+    "_id": "evidence-002",
+    "postgresIndicatorId": 2,
+    "indicatorType": "Domain",
+    "indicator": "login-update.example",
+    "source": "Internal SOC",
+    "confidence": 76,
+    "observedAt": "2025-01-08T16:30:00.000Z",
+    "tags": ["phishing", "internal-case"],
+    "context": {"caseId": "SOC-1042", "analystNote": "Reported in a simulated email exercise."}
+  },
+  {
+    "_id": "evidence-003",
+    "postgresIndicatorId": 3,
+    "indicatorType": "Hash",
+    "indicator": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source": "Regional ISAC",
+    "confidence": 88,
+    "observedAt": "2025-01-06T12:00:00.000Z",
+    "tags": ["malware", "file-hash"],
+    "context": {"file": {"name": "invoice_viewer.bin", "type": "PE32"}, "sharing": {"tlp": "AMBER"}}
+  },
+  {
+    "_id": "evidence-004",
+    "postgresIndicatorId": 4,
+    "indicatorType": "URL",
+    "indicator": "https://cdn.example/download.bin",
+    "source": "Vendor Intelligence",
+    "confidence": 65,
+    "observedAt": "2025-01-07T12:00:00.000Z",
+    "tags": ["payload-delivery", "url"],
+    "context": {"http": {"method": "GET", "path": "/download.bin"}, "firstSeenBy": "sandbox-demo"}
+  },
+  {
+    "_id": "evidence-005",
+    "postgresIndicatorId": 5,
+    "indicatorType": "IP",
+    "indicator": "203.0.113.77",
+    "source": "Open Threat Feed",
+    "confidence": 54,
+    "observedAt": "2025-01-10T08:00:00.000Z",
+    "tags": ["scanner", "low-confidence"],
+    "context": {"feedRecord": "OTF-2025-0108", "port": 443, "reports": 1}
+  },
+  {
+    "_id": "evidence-006",
+    "postgresIndicatorId": 6,
+    "indicatorType": "Email",
+    "indicator": "security-notice@example.net",
+    "source": "Internal SOC",
+    "confidence": 81,
+    "observedAt": "2025-01-08T18:00:00.000Z",
+    "tags": ["phishing", "impersonation"],
+    "context": {"mail": {"subject": "Security notice", "attachmentCount": 1}, "caseId": "SOC-1048"}
+  },
+  {
+    "_id": "evidence-007",
+    "postgresIndicatorId": 7,
+    "indicatorType": "Domain",
+    "indicator": "sync-service.example",
+    "source": "Regional ISAC",
+    "confidence": 43,
+    "observedAt": "2025-01-11T10:00:00.000Z",
+    "tags": ["command-and-control", "monitor"],
+    "context": {"dns": {"recordType": "A", "queryCount": 12}, "sharing": {"tlp": "GREEN"}}
+  },
+  {
+    "_id": "evidence-008",
+    "postgresIndicatorId": 8,
+    "indicatorType": "Hash",
+    "indicator": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "source": "Vendor Intelligence",
+    "confidence": 96,
+    "observedAt": "2025-01-12T20:00:00.000Z",
+    "tags": ["malware", "high-confidence"],
+    "context": {"file": {"name": "update_helper.dll", "type": "DLL"}, "vendorCase": "VI-88"}
+  }
+]

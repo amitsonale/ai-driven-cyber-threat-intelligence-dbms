@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#0a111c">
   <title>Threat Intelligence Console</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    .connection-dot.partial{background:var(--amber)}
+    .evidence-table{min-width:1080px}
+    .evidence-context{display:block;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9fb1c3;font-size:9px}
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -21,11 +26,12 @@
         <button class="nav-item" data-view="campaigns"><span class="nav-icon">⌁</span>Campaigns</button>
         <button class="nav-item" data-view="indicators"><span class="nav-icon">⌕</span>Indicators</button>
         <button class="nav-item" data-view="assets"><span class="nav-icon">▦</span>Assets</button>
+        <button class="nav-item" data-view="evidence"><span class="nav-icon">▤</span>Intel evidence</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="connection-card">
           <span class="connection-dot" id="sidebar-dot"></span>
-          <div><strong id="sidebar-connection">Connecting</strong><small>PostgreSQL database</small></div>
+          <div><strong id="sidebar-connection">Connecting</strong><small id="sidebar-databases">PostgreSQL + MongoDB</small></div>
         </div>
         <div class="user-chip"><span class="avatar">AT</span><span><strong>Analyst workspace</strong><small>Local demo</small></span></div>
       </div>
@@ -41,7 +47,7 @@
       <section id="view-root" aria-live="polite">
         <div class="loading-state"><span class="spinner"></span><span>Loading threat data…</span></div>
       </section>
-      <footer class="app-footer"><span>AI-Driven Cyber Threat Intelligence &amp; Attack Campaign Correlation System</span><span>PostgreSQL · Local application</span></footer>
+      <footer class="app-footer"><span>AI-Driven Cyber Threat Intelligence &amp; Attack Campaign Correlation System</span><span>PostgreSQL + MongoDB · Local application</span></footer>
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

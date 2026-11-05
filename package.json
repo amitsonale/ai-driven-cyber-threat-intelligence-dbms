@@ -2,11 +2,15 @@
   "name": "cyber-threat-intelligence-dashboard",
   "version": "1.0.0",
   "private": true,
-  "description": "Local PostgreSQL dashboard for the DBMS mini project",
+  "description": "Local PostgreSQL and MongoDB threat intelligence dashboard",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:mongodb": "node scripts/seed-mongodb.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "mongodb": "^6.22.0"
   }
 }

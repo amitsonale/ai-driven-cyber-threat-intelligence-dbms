@@ -5,13 +5,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { MongoClient } = require('mongodb');
 
 const execFileAsync = promisify(execFile);
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const PORT = Number(process.env.PORT || 3000);
-const HOST = process.env.HOST || '127.0.0.1';
-const PSQL_BIN = process.env.PSQL_BIN || 'psql';
 const VALID_SEVERITIES = new Set(['Low', 'Medium', 'High', 'Critical']);
 const VALID_STATUSES = new Set(['Open', 'Investigating', 'Resolved', 'False Positive']);
 
@@ -25,6 +23,13 @@ function loadEnvFile() {
   }
 }
 loadEnvFile();
+
+const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || '127.0.0.1';
+const PSQL_BIN = process.env.PSQL_BIN || 'psql';
+const MONGODB_URI = process.env.MONGODB_URI || '';
+const MONGODB_DATABASE = process.env.MONGODB_DATABASE || 'threat_intel_evidence';
+let mongoClient;
 
 function sendJson(res, status, body) {
   res.writeHead(status, {
@@ -61,6 +66,17 @@ async function queryRows(sql) {
 async function queryOne(sql) {
   const rows = await queryRows(sql);
   return rows[0] || null;
+}
+
+async function getMongoDatabase() {
+  if (!MONGODB_URI) {
+    const error = new Error('MONGODB_URI is not configured');
+    error.code = 'NO_MONGODB_URI';
+    throw error;
+  }
+  if (!mongoClient) mongoClient = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 2500 });
+  await mongoClient.connect();
+  return mongoClient.db(MONGODB_DATABASE);
 }
 
 async function getOverview() {
@@ -126,17 +142,17 @@ async function readBody(req) {
 
 async function handleApi(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/health') {
+    const postgresql = await queryOne('SELECT 1 AS ok').then(() => true, () => false);
+    let mongodb = false;
     try {
-      await queryOne('SELECT 1 AS ok');
-      return sendJson(res, 200, { connected: true });
-    } catch (error) {
-      return sendJson(res, 503, {
-        connected: false,
-        message: error.code === 'NO_DATABASE_URL'
-          ? 'Set DATABASE_URL in the project .env file.'
-          : 'PostgreSQL is unavailable. Check the connection and run the SQL setup scripts.',
-      });
-    }
+      const db = await getMongoDatabase();
+      await db.command({ ping: 1 });
+      mongodb = true;
+    } catch {}
+    const message = !postgresql
+      ? 'PostgreSQL is unavailable. Check DATABASE_URL and run the SQL setup scripts.'
+      : !mongodb ? 'PostgreSQL is connected; MongoDB is unavailable. Check MONGODB_URI and start MongoDB.' : undefined;
+    return sendJson(res, postgresql ? 200 : 503, { connected: postgresql, postgresql, mongodb, ...(message ? { message } : {}) });
   }
   try {
     if (req.method === 'GET' && url.pathname === '/api/overview') {
@@ -167,6 +183,13 @@ async function handleApi(req, res, url) {
         GROUP BY ast.asset_id, org.name ORDER BY
           CASE ast.criticality WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END,
           ast.hostname`));
+    }
+    if (req.method === 'GET' && url.pathname === '/api/evidence') {
+      const db = await getMongoDatabase();
+      const evidence = await db.collection('threat_evidence')
+        .find({}, { projection: { _id: 1, postgresIndicatorId: 1, indicatorType: 1, indicator: 1, source: 1, confidence: 1, observedAt: 1, tags: 1, context: 1 } })
+        .sort({ observedAt: -1 }).toArray();
+      return sendJson(res, 200, evidence);
     }
     const statusMatch = url.pathname.match(/^\/api\/alerts\/(\d+)\/status$/);
     if (req.method === 'PATCH' && statusMatch) {
