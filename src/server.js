@@ -63,6 +63,25 @@ async function queryRows(sql) {
   return line ? JSON.parse(line) : [];
 }
 
+async function executeReturningOne(sql) {
+  if (!process.env.DATABASE_URL) {
+    const error = new Error('DATABASE_URL is not configured');
+    error.code = 'NO_DATABASE_URL';
+    throw error;
+  }
+  const { stdout } = await execFileAsync(PSQL_BIN, [
+    '--dbname', process.env.DATABASE_URL,
+    '--no-psqlrc',
+    '--set', 'ON_ERROR_STOP=1',
+    '--quiet',
+    '--tuples-only',
+    '--no-align',
+    '--command', sql,
+  ], { timeout: 10000, maxBuffer: 1024 * 1024 });
+  const line = stdout.trim();
+  return line ? JSON.parse(line) : null;
+}
+
 async function queryOne(sql) {
   const rows = await queryRows(sql);
   return rows[0] || null;
@@ -124,11 +143,15 @@ async function updateAlertStatus(alertId, status) {
   const id = Number(alertId);
   if (!Number.isSafeInteger(id) || id < 1) return { error: 'Invalid alert ID.' };
   if (!VALID_STATUSES.has(status)) return { error: 'Choose a valid alert status.' };
-  const rows = await queryRows(`UPDATE alert
+  const row = await executeReturningOne(`UPDATE alert
       SET status = ${sqlLiteral(status)}
       WHERE alert_id = ${id}
-      RETURNING alert_id, status, updated_at`);
-  return rows[0] || null;
+      RETURNING json_build_object(
+        'alert_id', alert_id,
+        'status', status,
+        'updated_at', updated_at
+      )::text`);
+  return row;
 }
 
 async function readBody(req) {
