@@ -208,4 +208,39 @@ function renderEvidence(rows) {
 }
 async function loadView(view=state.view) {
   state.view=view;
-  document.querySelectorAll('.nav-item').forEach(button=>button.classList.toggle('active'
+  document.querySelectorAll('.nav-item').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
+  root.innerHTML='<div class="loading-state"><span class="spinner"></span><span>Loading threat data…</span></div>';
+  try {
+    if(view==='overview'){state.overview=await api('/api/overview');state.demoMode=false;renderOverview(state.overview);document.getElementById('nav-alert-count').textContent=n(state.overview.totals.open_alerts);}
+    if(view==='alerts'){state.alerts=await api('/api/alerts');renderAlerts(state.alerts);}
+    if(view==='campaigns'){state.campaigns=await api('/api/campaigns');renderCampaigns(state.campaigns);}
+    if(view==='indicators'){state.indicators=await api('/api/indicators');renderIndicators(state.indicators);}
+    if(view==='assets'){state.assets=await api('/api/assets');renderAssets(state.assets);}
+    if(view==='evidence'){state.evidence=await api('/api/evidence');renderEvidence(state.evidence);}
+    document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>loadView(b.dataset.goto)));
+  } catch(error) {
+    const health=await api('/api/health').catch(()=>({connected:false,message:error.message}));
+    setConnection(health);
+    if (!health.connected) {
+      state.demoMode=true;
+      if(view==='overview') renderOverview(DEMO.overview);
+      if(view==='alerts') renderAlerts(DEMO.alerts);
+      if(view==='campaigns') renderCampaigns(DEMO.campaigns);
+      if(view==='indicators') renderIndicators(DEMO.indicators);
+      if(view==='assets') renderAssets(DEMO.assets);
+      if(view==='evidence') root.innerHTML=`${pageHeading('Intel evidence','MongoDB evidence store is unavailable.')}`;
+      document.getElementById('nav-alert-count').textContent=n(DEMO.overview.totals.open_alerts);
+      return;
+    }
+    root.innerHTML=`<div class="empty-state">${esc(error.message)}. Check the local database setup, then refresh.</div>`;
+  }
+}
+async function refresh() {
+  const health=await api('/api/health').catch(error=>({connected:false,message:error.message}));
+  setConnection(health);
+  await loadView(state.view);
+}
+document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>loadView(button.dataset.view)));
+document.getElementById('refresh-button').addEventListener('click',refresh);
+api('/api/health').then(setConnection).catch(error=>setConnection({connected:false,message:error.message}));
+loadView('overview');
