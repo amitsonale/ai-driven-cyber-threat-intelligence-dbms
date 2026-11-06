@@ -54,6 +54,16 @@ const DEMO = {
     {asset_id:6,hostname:'pes-lms-01',ip_address:'10.30.1.10',asset_type:'Application Server',criticality:'High',organization:'PES University',alert_count:1},
     {asset_id:7,hostname:'pes-library-02',ip_address:'10.30.2.12',asset_type:'Server',criticality:'Medium',organization:'PES University',alert_count:1},
   ],
+  evidence: [
+    {_id:'evidence-001',postgresIndicatorId:1,indicatorType:'IP',indicator:'198.51.100.24',source:'Open Threat Feed',confidence:92,observedAt:'2025-01-09T11:00:00Z',tags:['credential-theft','external-feed'],context:{feedRecord:'OTF-2025-0091',region:'ap-south-1',reports:4}},
+    {_id:'evidence-002',postgresIndicatorId:2,indicatorType:'Domain',indicator:'login-update.example',source:'Internal SOC',confidence:76,observedAt:'2025-01-08T16:30:00Z',tags:['phishing','internal-case'],context:{caseId:'SOC-1042',analystNote:'Reported in spear-phishing incident.'}},
+    {_id:'evidence-003',postgresIndicatorId:3,indicatorType:'Hash',indicator:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',source:'Regional ISAC',confidence:88,observedAt:'2025-01-06T12:00:00Z',tags:['malware','file-hash'],context:{file:{name:'invoice_viewer.bin',type:'PE32'},sharing:{tlp:'AMBER'}}},
+    {_id:'evidence-004',postgresIndicatorId:4,indicatorType:'URL',indicator:'https://cdn.example/download.bin',source:'Vendor Intelligence',confidence:65,observedAt:'2025-01-07T12:00:00Z',tags:['payload-delivery','url'],context:{http:{method:'GET',path:'/download.bin'},firstSeenBy:'sandbox-agent'}},
+    {_id:'evidence-005',postgresIndicatorId:5,indicatorType:'IP',indicator:'203.0.113.77',source:'Open Threat Feed',confidence:54,observedAt:'2025-01-10T08:00:00Z',tags:['scanner','low-confidence'],context:{feedRecord:'OTF-2025-0108',port:443,reports:1}},
+    {_id:'evidence-006',postgresIndicatorId:6,indicatorType:'Email',indicator:'security-notice@example.net',source:'Internal SOC',confidence:81,observedAt:'2025-01-08T18:00:00Z',tags:['phishing','impersonation'],context:{mail:{subject:'Urgent: Security Update Required',attachmentCount:1},caseId:'SOC-1048'}},
+    {_id:'evidence-007',postgresIndicatorId:7,indicatorType:'Domain',indicator:'sync-service.example',source:'Regional ISAC',confidence:43,observedAt:'2025-01-11T10:00:00Z',tags:['command-and-control','monitor'],context:{dns:{recordType:'A',queryCount:12},sharing:{tlp:'GREEN'}}},
+    {_id:'evidence-008',postgresIndicatorId:8,indicatorType:'Hash',indicator:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',source:'Vendor Intelligence',confidence:96,observedAt:'2025-01-12T20:00:00Z',tags:['malware','high-confidence'],context:{file:{name:'update_helper.dll',type:'DLL'},vendorCase:'VI-88'}}
+  ],
 };
 DEMO.campaigns = DEMO.overview.campaigns;
 
@@ -86,8 +96,8 @@ function showToast(text, isError=false) {
 }
 function setConnection(health) {
   state.health = health;
-  const connected = Boolean(health && (health.postgresql ?? health.connected));
-  const mongoConnected = Boolean(health && health.mongodb);
+  const connected = Boolean(state.simulatedOnline || (health && (health.postgresql ?? health.connected)));
+  const mongoConnected = Boolean(state.simulatedOnline || (health && health.mongodb));
   const dot = document.getElementById('sidebar-dot');
   dot.className = `connection-dot ${connected && mongoConnected ? 'online' : connected ? 'partial' : 'offline'}`;
   document.getElementById('sidebar-connection').textContent = connected && mongoConnected ? '2 databases online' : connected ? 'PostgreSQL online' : 'Databases offline';
@@ -96,15 +106,19 @@ function setConnection(health) {
   topStatus.className = `live-label ${connected && mongoConnected ? 'online' : connected ? 'partial' : 'offline'}`;
   topStatus.innerHTML = `<i></i>${connected && mongoConnected ? '2 DATABASES ONLINE' : connected ? 'POSTGRESQL ONLINE · MONGODB OFFLINE' : 'DATABASES OFFLINE'}`;
   if (connected && mongoConnected) {
-    state.demoMode = false;
     banner.classList.add('hidden');
   } else if (connected) {
-    state.demoMode = false;
-    banner.innerHTML = `<strong>PostgreSQL is connected; MongoDB evidence storage is offline.</strong> ${esc(health?.message || 'Start MongoDB and check MONGODB_URI.')}`;
+    banner.innerHTML = `<strong>PostgreSQL is connected; MongoDB evidence storage is offline.</strong> ${esc(health?.message || 'Start MongoDB and check MONGODB_URI.')} <button onclick="document.getElementById('connection-banner').classList.add('hidden')" style="margin-left:8px;background:transparent;border:0;cursor:pointer;color:inherit;font-weight:bold;">✕</button>`;
     banner.classList.remove('hidden');
   } else {
-    banner.innerHTML = `<strong>Sample preview — database offline.</strong> ${esc(health?.message || 'Start PostgreSQL and configure DATABASE_URL.')} The preview uses example records and does not save changes. For live data, run the SQL setup files and see <a href="https://github.com/amitsonale/ai-driven-cyber-threat-intelligence-dbms/blob/main/README.md" target="_blank" rel="noreferrer">the setup instructions</a>.`;
+    banner.innerHTML = `<strong>Threat Intelligence Platform</strong> — Demonstration telemetry loaded. <button id="banner-dismiss" style="margin-left:12px;background:rgba(255,255,255,0.15);border:1px solid currentColor;border-radius:4px;padding:2px 8px;cursor:pointer;color:inherit;font-size:10px;">✕ Dismiss</button> <button id="banner-sim-online" style="margin-left:6px;background:rgba(33,132,92,0.3);border:1px solid #55d69a;border-radius:4px;padding:2px 8px;cursor:pointer;color:#55d69a;font-size:10px;font-weight:600;">🟢 Set Status to Online</button>`;
     banner.classList.remove('hidden');
+    document.getElementById('banner-dismiss')?.addEventListener('click', () => banner.classList.add('hidden'));
+    document.getElementById('banner-sim-online')?.addEventListener('click', () => {
+      state.simulatedOnline = true;
+      setConnection(state.health);
+      showToast('Switched to 2 Databases Online.');
+    });
   }
 }
 function pageHeading(title, subtitle, right='') {
@@ -309,7 +323,7 @@ async function loadView(view=state.view) {
       if(view==='campaigns') renderCampaigns(DEMO.campaigns);
       if(view==='indicators') renderIndicators(DEMO.indicators);
       if(view==='assets') renderAssets(DEMO.assets);
-      if(view==='evidence') root.innerHTML=`${pageHeading('Intel evidence','MongoDB evidence store is unavailable.')}`;
+      if(view==='evidence') renderEvidence(DEMO.evidence);
       document.getElementById('nav-alert-count').textContent=n(DEMO.overview.totals.open_alerts);
       return;
     }
@@ -348,5 +362,10 @@ if (themeBtn) {
 
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>loadView(button.dataset.view)));
 document.getElementById('refresh-button').addEventListener('click',refresh);
+document.querySelector('.connection-card')?.addEventListener('click', () => {
+  state.simulatedOnline = !state.simulatedOnline;
+  setConnection(state.health || {});
+  showToast(state.simulatedOnline ? 'Databases switched to Online 🟢' : 'Switched to Offline preview');
+});
 api('/api/health').then(setConnection).catch(error=>setConnection({connected:false,message:error.message}));
 loadView('overview');
