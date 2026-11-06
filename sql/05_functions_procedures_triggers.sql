@@ -74,3 +74,71 @@ BEGIN
     GET DIAGNOSTICS p_rows_updated = ROW_COUNT;
 END;
 $$;
+
+-- AI-Driven Dynamic Campaign Correlation Stored Procedure
+-- Aggregates IOC confidence, intel source reliability, TTP technique breadth,
+-- and real-world alert telemetry into a multi-factor correlation score (0.000 to 1.000).
+CREATE OR REPLACE PROCEDURE calculate_campaign_correlations()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    r RECORD;
+    v_avg_ioc_conf NUMERIC;
+    v_avg_src_rel NUMERIC;
+    v_ttp_count INTEGER;
+    v_alert_count INTEGER;
+    v_new_score NUMERIC(5,3);
+BEGIN
+    FOR r IN SELECT campaign_id FROM campaign LOOP
+        -- 1. Average confidence of linked indicators (scaled 0.0 to 1.0)
+        SELECT COALESCE(AVG(i.confidence_score) / 100.0, 0.50)
+          INTO v_avg_ioc_conf
+          FROM campaign_indicator ci
+          JOIN indicator i ON i.indicator_id = ci.indicator_id
+         WHERE ci.campaign_id = r.campaign_id;
+
+        -- 2. Average reliability of sources providing those indicators
+        SELECT COALESCE(AVG(s.reliability_score), 0.50)
+          INTO v_avg_src_rel
+          FROM campaign_indicator ci
+          JOIN indicator i ON i.indicator_id = ci.indicator_id
+          LEFT JOIN intel_source s ON s.source_id = i.source_id
+         WHERE ci.campaign_id = r.campaign_id;
+
+        -- 3. Quantity of linked MITRE ATT&CK techniques (TTPs)
+        SELECT COUNT(DISTINCT ttp_id)
+          INTO v_ttp_count
+          FROM campaign_ttp
+         WHERE campaign_id = r.campaign_id;
+
+        -- 4. Quantity of detected alerts matching campaign indicators
+        SELECT COUNT(DISTINCT a.alert_id)
+          INTO v_alert_count
+          FROM campaign_indicator ci
+          JOIN alert a ON a.indicator_id = ci.indicator_id
+         WHERE ci.campaign_id = r.campaign_id;
+
+        -- Multi-factor weighted correlation formula:
+        -- 40% IOC Confidence + 25% Source Reliability + 20% TTP Depth + 15% Alert Verification
+        v_new_score := LEAST(1.000, GREATEST(0.050,
+            (v_avg_ioc_conf * 0.40) +
+            (v_avg_src_rel * 0.25) +
+            (LEAST(v_ttp_count, 5)::NUMERIC / 5.0 * 0.20) +
+            (LEAST(v_alert_count, 5)::NUMERIC / 5.0 * 0.15)
+        ));
+
+        -- Update the campaign record
+        UPDATE campaign
+           SET correlation_score = ROUND(v_new_score, 3)
+         WHERE campaign_id = r.campaign_id;
+
+        -- Also update per-indicator correlation scores within the campaign
+        UPDATE campaign_indicator ci
+           SET correlation_score = ROUND(LEAST(1.000, (i.confidence_score / 100.0 * 0.60 + COALESCE(s.reliability_score, 0.50) * 0.40)), 3)
+          FROM indicator i
+          LEFT JOIN intel_source s ON s.source_id = i.source_id
+         WHERE ci.campaign_id = r.campaign_id
+           AND i.indicator_id = ci.indicator_id;
+    END LOOP;
+END;
+$$;

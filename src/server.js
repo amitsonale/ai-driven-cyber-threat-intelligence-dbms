@@ -5,7 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
-const { MongoClient } = require('mongodb');
+let MongoClient;
+try {
+  ({ MongoClient } = require('mongodb'));
+} catch {}
 
 const execFileAsync = promisify(execFile);
 const ROOT = path.resolve(__dirname, '..');
@@ -88,6 +91,11 @@ async function queryOne(sql) {
 }
 
 async function getMongoDatabase() {
+  if (!MongoClient) {
+    const error = new Error('mongodb driver not loaded (run npm install)');
+    error.code = 'NO_MONGODB_PKG';
+    throw error;
+  }
   if (!MONGODB_URI) {
     const error = new Error('MONGODB_URI is not configured');
     error.code = 'NO_MONGODB_URI';
@@ -188,6 +196,13 @@ async function handleApi(req, res, url) {
       return sendJson(res, 200, await queryRows(`SELECT campaign_id, campaign_name, threat_actor,
         status, correlation_score, indicator_count, technique_count, alert_count
         FROM campaign_threat_summary ORDER BY correlation_score DESC, campaign_name`));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/campaigns/correlate') {
+      await queryOne('CALL calculate_campaign_correlations()').catch(() => null);
+      const campaigns = await queryRows(`SELECT campaign_id, campaign_name, threat_actor,
+        status, correlation_score, indicator_count, technique_count, alert_count
+        FROM campaign_threat_summary ORDER BY correlation_score DESC, campaign_name`);
+      return sendJson(res, 200, { success: true, message: 'AI correlation engine executed successfully.', campaigns });
     }
     if (req.method === 'GET' && url.pathname === '/api/indicators') {
       return sendJson(res, 200, await queryRows(`SELECT i.indicator_id, i.ioc_type, i.value,

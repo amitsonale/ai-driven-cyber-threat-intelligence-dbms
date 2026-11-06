@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,7 +40,13 @@
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-context">THREAT OPERATIONS</div>
-        <div class="topbar-actions"><span class="live-label" id="topbar-db-status"><i></i> CONNECTING</span><button class="icon-button" id="refresh-button" title="Refresh dashboard data" aria-label="Refresh dashboard data">↻</button></div>
+        <div class="topbar-actions">
+          <span class="live-label" id="topbar-db-status"><i></i> CONNECTING</span>
+          <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme" aria-label="Toggle Theme">
+            <span class="theme-icon">☀️</span> <span class="theme-text">Light Mode</span>
+          </button>
+          <button class="icon-button" id="refresh-button" title="Refresh dashboard data" aria-label="Refresh dashboard data">↻</button>
+        </div>
       </header>
 
       <div id="connection-banner" class="connection-banner hidden" role="status"></div>

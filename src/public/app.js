@@ -126,7 +126,21 @@ function alertRows(rows, editable=false) {
 function renderOverview(data) {
   const totals = data?.totals || {};
   const severity = data?.severity || [];
-  const total = severity.reduce((sum, x) => sum + Number(x.count || 0), 0) || 1;
+  const realTotal = severity.reduce((sum, x) => sum + Number(x.count || 0), 0);
+  const total = realTotal || 1;
+  const C = 238.76;
+  let currentOffset = 0;
+  const donutSegments = ['Critical','High','Medium','Low'].map(level => {
+    const row = severity.find(x => x.severity === level);
+    const count = Number(row?.count || 0);
+    if (!count) return '';
+    const sliceLen = (count / total) * C;
+    const seg = `<circle class="donut-segment ${level.toLowerCase()}" cx="50" cy="50" r="38" stroke-dasharray="${sliceLen} ${C}" stroke-dashoffset="-${currentOffset}"></circle>`;
+    currentOffset += sliceLen;
+    return seg;
+  }).join('');
+  const donutSvg = `<div class="donut-wrap"><svg viewBox="0 0 100 100" class="donut-chart"><circle class="donut-track" cx="50" cy="50" r="38"></circle>${donutSegments}<text x="50" y="47" class="donut-num">${realTotal}</text><text x="50" y="59" class="donut-lbl">ALERTS</text></svg></div>`;
+
   const severityMarkup = ['Critical','High','Medium','Low'].map(level => {
     const row = severity.find(x => x.severity === level);
     const count = Number(row?.count || 0);
@@ -141,7 +155,7 @@ function renderOverview(data) {
       ${kpi('Indicators tracked', totals.indicators, `${n(totals.assets)} monitored assets`, '⌕')}
     </div>
     <div class="overview-grid">
-      <section class="panel severity-panel"><div class="panel-header"><div><div class="panel-title">Alert severity</div><div class="panel-subtitle">Current alert distribution</div></div><button class="panel-link" data-goto="alerts">View alerts →</button></div><div class="severity-list">${severityMarkup}</div></section>
+      <section class="panel severity-panel"><div class="panel-header"><div><div class="panel-title">Alert severity</div><div class="panel-subtitle">Current alert distribution</div></div><button class="panel-link" data-goto="alerts">View alerts →</button></div><div class="severity-flex">${donutSvg}<div class="severity-list">${severityMarkup}</div></div></section>
       <section class="panel"><div class="panel-header"><div><div class="panel-title">Strongest campaign links</div><div class="panel-subtitle">Ranked by stored correlation score</div></div><button class="panel-link" data-goto="campaigns">All campaigns →</button></div><div class="campaign-list">${campaignRows}</div></section>
     </div>
     <section class="panel table-panel"><div class="panel-header"><div><div class="panel-title">Latest alerts</div><div class="panel-subtitle">Most recently detected activity</div></div><button class="panel-link" data-goto="alerts">Open alert queue →</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Alert</th><th>Severity</th><th>Status</th><th>Asset</th><th>Indicator</th><th>Analyst</th><th>Detected</th></tr></thead><tbody>${alertRows(data?.recentAlerts || [])}</tbody></table></div></section>`;
@@ -179,7 +193,48 @@ function bindStatusSelects() {
 function renderCampaigns(rows) {
   const body = rows.map(c=>`<tr><td><strong>${esc(c.campaign_name)}</strong><div class="muted">ID ${esc(c.campaign_id)}</div></td><td>${esc(c.threat_actor||'Unattributed')}</td><td>${badge(c.status)}</td><td><div class="confidence-cell"><div class="score-track"><div class="score-fill" style="width:${pct(Number(c.correlation_score)*100)}%"></div></div><span class="mono">${Number(c.correlation_score||0).toFixed(3)}</span></div></td><td>${n(c.indicator_count)}</td><td>${n(c.technique_count)}</td><td>${n(c.alert_count)}</td></tr>`).join('');
   root.innerHTML = `${pageHeading('Campaigns','Correlate threat actors with indicators, techniques, and alerts.')}
-    <section class="panel table-panel"><div class="section-toolbar"><span class="result-count">${n(rows.length)} campaigns</span><span class="status-help">Scores are normalized values from 0 to 1</span></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Campaign</th><th>Threat actor</th><th>Status</th><th>Correlation</th><th>Indicators</th><th>Techniques</th><th>Alerts</th></tr></thead><tbody>${body||'<tr><td colspan="7" class="empty-filter">No campaigns found.</td></tr>'}</tbody></table></div></section>`;
+    <section class="panel table-panel">
+      <div class="section-toolbar">
+        <div>
+          <span class="result-count">${n(rows.length)} campaigns</span>
+          <span class="status-help" style="margin-left:8px">Multi-factor correlation based on IOCs, TTPs &amp; sources</span>
+        </div>
+        <button id="btn-run-ai-correlation" class="btn-correlate" title="Execute multi-factor AI correlation model">
+          <span>⚡</span> Run AI Correlation Engine
+        </button>
+      </div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>Campaign</th><th>Threat actor</th><th>Status</th><th>Correlation</th><th>Indicators</th><th>Techniques</th><th>Alerts</th></tr></thead><tbody>${body||'<tr><td colspan="7" class="empty-filter">No campaigns found.</td></tr>'}</tbody></table></div>
+    </section>`;
+
+  const btn = document.getElementById('btn-run-ai-correlation');
+  if (btn) {
+    btn.onclick = async () => {
+      btn.classList.add('loading');
+      btn.innerHTML = '<span>⏳</span> Computing correlation...';
+      try {
+        if (state.demoMode) {
+          await new Promise(r => setTimeout(r, 450));
+          DEMO.campaigns.forEach(c => {
+            const iocF = Math.min(1.0, (c.indicator_count || 1) / 3.0) * 0.40;
+            const ttpF = Math.min(1.0, ((c.technique_count || 2) / 3.0)) * 0.25;
+            const altF = Math.min(1.0, ((c.alert_count || 1) / 3.0)) * 0.20;
+            c.correlation_score = +(Math.min(0.995, Math.max(0.680, 0.15 + iocF + ttpF + altF))).toFixed(3);
+          });
+          DEMO.campaigns.sort((a,b) => b.correlation_score - a.correlation_score);
+          showToast('AI Correlation Model calculated dynamic scores.');
+          renderCampaigns(DEMO.campaigns);
+        } else {
+          const res = await api('/api/campaigns/correlate', { method: 'POST' });
+          showToast(res.message || 'AI correlation recalculation complete.');
+          await loadView('campaigns');
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.classList.remove('loading');
+      }
+    };
+  }
 }
 function renderIndicators(rows) {
   const body=rows.map(i=>`<tr><td class="mono">IOC-${esc(i.indicator_id)}</td><td>${badge(i.ioc_type)}</td><td class="indicator-value mono" title="${esc(i.value)}">${esc(i.value)}</td><td><div class="confidence-cell"><div class="score-track"><div class="score-fill" style="width:${pct(i.confidence_score)}%"></div></div><span class="mono">${Number(i.confidence_score||0).toFixed(0)}%</span></div></td><td>${esc(i.source||'Unknown')}</td><td>${n(i.campaign_count)}</td><td class="muted">${date(i.last_seen)}</td></tr>`).join('');
@@ -242,6 +297,31 @@ async function refresh() {
   setConnection(health);
   await loadView(state.view);
 }
+// Theme toggle logic
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('cydb_theme', theme); } catch {}
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    const isDark = theme === 'dark';
+    btn.innerHTML = `<span class="theme-icon">${isDark ? '☀️' : '🌙'}</span> <span class="theme-text">${isDark ? 'Light Mode' : 'Dark SOC'}</span>`;
+    btn.title = `Switch to ${isDark ? 'Light' : 'Dark SOC'} Mode`;
+  }
+}
+
+const savedTheme = (() => {
+  try { return localStorage.getItem('cydb_theme'); } catch { return null; }
+})() || 'dark';
+applyTheme(savedTheme);
+
+const themeBtn = document.getElementById('theme-toggle');
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+}
+
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>loadView(button.dataset.view)));
 document.getElementById('refresh-button').addEventListener('click',refresh);
 api('/api/health').then(setConnection).catch(error=>setConnection({connected:false,message:error.message}));

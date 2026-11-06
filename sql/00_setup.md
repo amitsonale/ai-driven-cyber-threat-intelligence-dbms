@@ -7,8 +7,8 @@ createdb threat_intel_db
 psql -d threat_intel_db -f sql/01_schema.sql
 psql -d threat_intel_db -f sql/02_seed_data.sql
 psql -d threat_intel_db -f sql/03_views_indexes.sql
-psql -d threat_intel_db -f sql/04_queries.sql
 psql -d threat_intel_db -f sql/05_functions_procedures_triggers.sql
+psql -d threat_intel_db -f sql/04_queries.sql
 ```
 
 `sql/06_transaction_examples.sql` is a separate demonstration script. The commit example is safe to run; the final full-rollback block intentionally leaves no changes committed.

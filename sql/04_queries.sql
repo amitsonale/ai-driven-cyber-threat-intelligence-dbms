@@ -158,3 +158,10 @@ ORDER BY c.correlation_score DESC, i.confidence_score DESC;
 -- 11. Safe DELETE pattern. Replace the key after reviewing dependencies.
 -- DELETE FROM campaign_indicator
 -- WHERE campaign_id = 1 AND indicator_id = 1;
+
+-- 12. Run the AI-driven campaign correlation procedure and verify updated scores.
+CALL calculate_campaign_correlations();
+
+SELECT campaign_id, name, status, correlation_score
+FROM campaign
+ORDER BY correlation_score DESC;
