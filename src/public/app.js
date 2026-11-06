@@ -117,7 +117,7 @@ function alertRows(rows, editable=false) {
   if (!rows?.length) return `<tr><td colspan="7" class="empty-filter">No alerts match these filters.</td></tr>`;
   return rows.map(a => `<tr>
     <td class="mono">AL-${esc(a.alert_id)}</td><td>${badge(a.severity)}</td>
-    <td>${editable ? `<select class="status-select" data-alert-id="${esc(a.alert_id)}" data-saved-status="${esc(a.status)}" aria-label="Change status for alert ${esc(a.alert_id)}" ${state.demoMode?'disabled':''}>${['Open','Investigating','Resolved','False Positive'].map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select>` : badge(a.status)}</td>
+    <td>${editable ? `<select class="status-select" data-alert-id="${esc(a.alert_id)}" data-saved-status="${esc(a.status)}" aria-label="Change status for alert ${esc(a.alert_id)}">${['Open','Investigating','Resolved','False Positive'].map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select>` : badge(a.status)}</td>
     <td><strong>${esc(a.hostname)}</strong><div class="muted">${esc(a.ip_address || '')}</div></td>
     <td><span class="mono">${esc(a.ioc_type)}</span><div class="indicator-value" title="${esc(a.indicator)}">${esc(a.indicator)}</div></td>
     <td>${esc(a.analyst || 'Unassigned')}</td><td class="muted">${date(a.detected_at)}</td>
@@ -178,15 +178,39 @@ function renderAlerts(rows) {
 function bindStatusSelects() {
   document.querySelectorAll('.status-select').forEach(select => {
     select.onchange = async () => {
-      const id=select.dataset.alertId;
-      const previousStatus=select.dataset.savedStatus;
-      select.disabled=true;
+      const id = select.dataset.alertId;
+      const newStatus = select.value;
+      const previousStatus = select.dataset.savedStatus;
+      select.disabled = true;
       try {
-        await api(`/api/alerts/${encodeURIComponent(id)}/status`, {method:'PATCH',body:JSON.stringify({status:select.value})});
-        select.dataset.savedStatus=select.value;
-        showToast(`Alert AL-${id} status updated.`);
-        await loadView('alerts');
-      } catch (error) { select.value=previousStatus; showToast(error.message,true); select.disabled=false; }
+        if (state.demoMode) {
+          await new Promise(r => setTimeout(r, 180));
+          const target = DEMO.alerts.find(a => String(a.alert_id) === String(id));
+          if (target) target.status = newStatus;
+          const recentTarget = DEMO.overview.recentAlerts.find(a => String(a.alert_id) === String(id));
+          if (recentTarget) recentTarget.status = newStatus;
+
+          const openCount = DEMO.alerts.filter(a => ['Open', 'Investigating'].includes(a.status)).length;
+          const critCount = DEMO.alerts.filter(a => a.severity === 'Critical' && ['Open', 'Investigating'].includes(a.status)).length;
+          DEMO.overview.totals.open_alerts = openCount;
+          DEMO.overview.totals.critical_alerts = critCount;
+          const navCount = document.getElementById('nav-alert-count');
+          if (navCount) navCount.textContent = n(openCount);
+
+          select.dataset.savedStatus = newStatus;
+          showToast(`Alert AL-${id} status changed to ${newStatus}`);
+          select.disabled = false;
+        } else {
+          await api(`/api/alerts/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+          select.dataset.savedStatus = newStatus;
+          showToast(`Alert AL-${id} status updated.`);
+          await loadView('alerts');
+        }
+      } catch (error) {
+        select.value = previousStatus;
+        showToast(error.message, true);
+        select.disabled = false;
+      }
     };
   });
 }
