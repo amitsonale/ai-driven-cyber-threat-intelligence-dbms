@@ -199,3 +199,30 @@ Returns campaigns above the selected correlation threshold, ordered by score.
 Combines campaign, actor, indicator, malware, alert, and asset data for investigation.
 
 ![Screenshot 31: Final threat intelligence correlation query](page-17-shot-02.png)
+
+## Live Dashboard & AI Stored Procedure (Updated Implementation)
+
+### Screenshot 32 — Live Overview Dashboard with SVG Severity Donut
+Shows the updated Overview console with the SVG Alert Donut Chart, Dark SOC mode, and active health monitoring.
+
+![Screenshot 32: Live Overview Dashboard](dashboard-overview-updated.jpg)
+
+### Screenshot 33 — Alerts Queue with Interactive Status Controls
+Shows the alert queue with multi-factor filtering and inline status dropdowns.
+
+![Screenshot 33: Alerts Queue](dashboard-alerts-updated.jpg)
+
+### Screenshot 34 — Campaign Correlation with Dynamic AI Engine
+Shows campaign records with the "⚡ Run AI Correlation Engine" execution action and calculated correlation scores.
+
+![Screenshot 34: Campaign Correlation](dashboard-campaigns-ai.jpg)
+
+### Screenshot 35 — Intel Evidence (MongoDB NoSQL Document Store)
+Shows flexible MongoDB threat-evidence documents containing polymorphic tags and nested source context.
+
+![Screenshot 35: MongoDB Intel Evidence](dashboard-evidence-mongodb.jpg)
+
+### Screenshot 36 — AI Stored Procedure Terminal Execution
+Shows execution of `CALL calculate_campaign_correlations()` dynamically updating campaign and per-indicator correlation scores in PostgreSQL.
+
+![Screenshot 36: AI Correlation Procedure Execution](procedure-calculate-correlations.png)
